@@ -85,6 +85,12 @@ With custom minotari executable path:
 tari-advent open --executable /path/to/minotari
 ```
 
+Skip blockchain scanning (faster, but won't retrieve new messages):
+
+```bash
+tari-advent open <day> <password> --no-scan
+```
+
 ### Show Wallet Information
 
 Display wallet details and messages for an already-unlocked day:
@@ -97,6 +103,12 @@ Interactive mode:
 
 ```bash
 tari-advent show
+```
+
+Skip blockchain scanning (faster, but won't retrieve new messages):
+
+```bash
+tari-advent show <day> --no-scan
 ```
 
 ### Generate Addresses (Admin)

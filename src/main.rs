@@ -55,6 +55,9 @@ enum Commands {
         /// Path to minotari executable (default: minotari.exe)
         #[arg(short, long, default_value = "minotari.exe")]
         executable: String,
+        /// Skip blockchain scanning
+        #[arg(long)]
+        no_scan: bool,
     },
     /// Generate addresses from CSV of passwords
     Generate {
@@ -76,6 +79,9 @@ enum Commands {
         /// Path to minotari executable (default: minotari.exe)
         #[arg(short, long, default_value = "minotari.exe")]
         executable: String,
+        /// Skip blockchain scanning
+        #[arg(long)]
+        no_scan: bool,
     },
 }
 
@@ -89,10 +95,11 @@ async fn main() -> Result<(), anyhow::Error> {
             day,
             password,
             executable,
+            no_scan,
         } => {
             let client = wallet_client::BinaryWalletClient::new(executable.clone());
 
-            open_door(day, password, client).await
+            open_door(day, password, client, no_scan).await
         }
         Commands::Generate {
             csv_path,
@@ -100,9 +107,9 @@ async fn main() -> Result<(), anyhow::Error> {
             executable,
             column,
         } => generate_addresses(csv_path, output_dir, executable, column),
-        Commands::Show { day, executable } => {
+        Commands::Show { day, executable, no_scan } => {
             let client = wallet_client::BinaryWalletClient::new(executable.clone());
-            show_day(day, client).await
+            show_day(day, client, no_scan).await
         }
     }
 }
@@ -282,6 +289,7 @@ async fn open_door<T: WalletClient>(
     day: Option<u8>,
     password: Option<String>,
     client: T,
+    no_scan: bool,
 ) -> Result<(), anyhow::Error> {
     // Prompt for day if not provided
     let day = match day {
@@ -369,12 +377,16 @@ async fn open_door<T: WalletClient>(
                 println!("\n📂 Wallet database already exists for day {}", day);
             }
 
-            println!("🔍 Scanning wallet...");
+            if !no_scan {
+                println!("🔍 Scanning wallet...");
 
-            // Scan wallet
-            client
-                .scan(&wallet_file, "password1", "https://rpc.tari.com")
-                .await?;
+                // Scan wallet
+                client
+                    .scan(&wallet_file, "password1", "https://rpc.tari.com")
+                    .await?;
+            } else {
+                println!("⏭️  Skipping wallet scan");
+            }
             // Construct TariAddress from the keys
             match construct_tari_address(&view_key, &spend_key) {
                 Ok(address) => {
@@ -469,7 +481,7 @@ async fn open_door<T: WalletClient>(
     Ok(())
 }
 
-async fn show_day<T: WalletClient>(day: Option<u8>, client: T) -> Result<(), anyhow::Error> {
+async fn show_day<T: WalletClient>(day: Option<u8>, client: T, no_scan: bool) -> Result<(), anyhow::Error> {
     // Prompt for day if not provided
     let day = match day {
         Some(d) => d,
@@ -523,12 +535,17 @@ async fn show_day<T: WalletClient>(day: Option<u8>, client: T) -> Result<(), any
             .import_view_key(&view_key, &spend_key, password, &wallet_file)
             .await?;
     }
-    println!("🔍 Scanning wallet...");
 
-    // Scan wallet
-    client
-        .scan(&wallet_file, "password1", "https://rpc.tari.com")
-        .await?;
+    if !no_scan {
+        println!("🔍 Scanning wallet...");
+
+        // Scan wallet
+        client
+            .scan(&wallet_file, "password1", "https://rpc.tari.com")
+            .await?;
+    } else {
+        println!("⏭️  Skipping wallet scan");
+    }
 
     // Construct TariAddress from the keys
     match construct_tari_address(&view_key, &spend_key) {
