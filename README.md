@@ -135,6 +135,25 @@ Skip blockchain scanning (faster, but won't retrieve new messages):
 tari-advent show <day> --no-scan
 ```
 
+### Scan All Unlocked Doors
+
+Scan all unlocked doors and display their messages in one command:
+
+```bash
+tari-advent scan-all-open
+```
+
+This command will:
+- Find all previously unlocked days
+- Scan the blockchain for each wallet
+- Display the wallet address and all messages for each day
+
+With custom minotari executable path:
+
+```bash
+tari-advent scan-all-open --executable /path/to/minotari
+```
+
 ### Generate Addresses (Admin)
 
 Generate 24 encrypted wallet addresses from a CSV of passwords:

@@ -83,6 +83,13 @@ enum Commands {
         #[arg(long)]
         no_scan: bool,
     },
+    /// Scan all unlocked doors and display messages
+    #[command(alias = "scan-all")]
+    ScanAllOpen {
+        /// Path to minotari executable (default: minotari.exe)
+        #[arg(short, long, default_value = "minotari.exe")]
+        executable: String,
+    },
 }
 
 #[tokio::main]
@@ -110,6 +117,10 @@ async fn main() -> Result<(), anyhow::Error> {
         Commands::Show { day, executable, no_scan } => {
             let client = wallet_client::BinaryWalletClient::new(executable.clone());
             show_day(day, client, no_scan).await
+        }
+        Commands::ScanAllOpen { executable } => {
+            let client = wallet_client::BinaryWalletClient::new(executable.clone());
+            scan_all_open(client).await
         }
     }
 }
@@ -631,6 +642,148 @@ async fn show_day<T: WalletClient>(day: Option<u8>, client: T, no_scan: bool) ->
     }
 
     println!("\n✅ Wallet for day {} is ready!", day);
+    Ok(())
+}
+
+async fn scan_all_open<T: WalletClient>(client: T) -> Result<(), anyhow::Error> {
+    println!("🔍 Scanning all unlocked doors...\n");
+
+    let unlocked = load_unlocked_days();
+    if unlocked.is_empty() {
+        println!("No unlocked doors found. Use 'tari-advent open' to unlock a door first.");
+        return Ok(());
+    }
+
+    // Get all unlocked days sorted
+    let mut unlocked_days: Vec<u8> = unlocked
+        .keys()
+        .filter_map(|key| {
+            key.strip_prefix("day")
+                .and_then(|day_str| day_str.parse::<u8>().ok())
+        })
+        .collect();
+    unlocked_days.sort();
+
+    println!("Found {} unlocked door(s): {:?}\n", unlocked_days.len(), unlocked_days);
+
+    // Get encrypted data
+    let encrypted_entries: Vec<&str> = ENCRYPTED_DAYS_CSV.lines().skip(1).collect();
+
+    // Get wallet directory
+    let wallet_dir = get_wallet_dir()?;
+
+    for &day in &unlocked_days {
+        println!("═══════════════════════════════════════════════════════════════");
+        println!("📅 Day {}", day);
+        println!("═══════════════════════════════════════════════════════════════");
+
+        // Get the saved password
+        let password = match unlocked.get(&format!("day{}", day)) {
+            Some(p) => p,
+            None => {
+                eprintln!("⚠️  Could not find password for day {}, skipping...\n", day);
+                continue;
+            }
+        };
+
+        // Get encrypted data and decrypt to get keys
+        let encrypted_data = match encrypted_entries.get(day as usize - 1) {
+            Some(data) => data,
+            None => {
+                eprintln!("⚠️  No encrypted data found for day {}, skipping...\n", day);
+                continue;
+            }
+        };
+
+        let (view_key, spend_key) = match decrypt_keys(encrypted_data, password) {
+            Ok(keys) => keys,
+            Err(e) => {
+                eprintln!("⚠️  Failed to decrypt keys for day {}: {}, skipping...\n", day, e);
+                continue;
+            }
+        };
+
+        let wallet_file = wallet_dir.join(format!("wallet-day-{}.sqlite", day));
+
+        // Only import if the database doesn't exist
+        if !wallet_file.exists() {
+            println!("📂 Importing keys for day {}...", day);
+            if let Err(e) = client.import_view_key(&view_key, &spend_key, password, &wallet_file).await {
+                eprintln!("⚠️  Failed to import keys for day {}: {}, skipping...\n", day, e);
+                continue;
+            }
+        }
+
+        println!("🔍 Scanning wallet for day {}...", day);
+        if let Err(e) = client.scan(&wallet_file, "password1", "https://rpc.tari.com").await {
+            eprintln!("⚠️  Scan failed for day {}: {}, continuing...\n", day, e);
+        }
+
+        // Construct TariAddress from the keys
+        match construct_tari_address(&view_key, &spend_key) {
+            Ok(address) => {
+                let display_address = address.to_base58();
+                println!("🏦 Wallet Address: {}", display_address);
+            }
+            Err(e) => {
+                eprintln!("⚠️  Warning: Could not construct Tari address: {}", e);
+            }
+        }
+
+        // Query the outputs table for messages
+        println!("\n📬 Messages:");
+        match Connection::open(&wallet_file) {
+            Ok(conn) => {
+                match conn.prepare(
+                    "SELECT mined_timestamp, memo_parsed FROM outputs WHERE memo_parsed IS NOT NULL AND memo_parsed != '' ORDER BY mined_timestamp"
+                ) {
+                    Ok(mut stmt) => {
+                        match stmt.query_map([], |row| {
+                            Ok((
+                                row.get::<_, String>(0)?,
+                                row.get::<_, String>(1)?,
+                            ))
+                        }) {
+                            Ok(messages) => {
+                                let mut found_any = false;
+                                for message in messages {
+                                    match message {
+                                        Ok((timestamp, memo)) => {
+                                            found_any = true;
+                                            println!("   [{}] {}", timestamp, memo);
+                                        }
+                                        Err(e) => {
+                                            eprintln!("⚠️  Error reading message: {}", e);
+                                        }
+                                    }
+                                }
+                                if !found_any {
+                                    println!("   (No messages found)");
+                                }
+                            }
+                            Err(e) => {
+                                eprintln!("⚠️  Could not query messages: {}", e);
+                                println!("   (No messages found or database error)");
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("⚠️  Could not prepare query: {}", e);
+                        println!("   (No messages found or database error)");
+                    }
+                }
+                conn.close().ok();
+            }
+            Err(e) => {
+                eprintln!("⚠️  Could not open database: {}", e);
+                println!("   (No messages found or database error)");
+            }
+        }
+
+        println!();
+    }
+
+    println!("✅ Scan complete! Scanned {} door(s).", unlocked_days.len());
     Ok(())
 }
 
