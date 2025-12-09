@@ -1,4 +1,4 @@
-# Tari Advent Calendar
+# Tari Advent Calendar 2025
 
 A Holiday themed example of using the [Tari Hidden Address Protocol](https://github.com/tari-project/tips/blob/main/tips/TIP-0003.md).
 
