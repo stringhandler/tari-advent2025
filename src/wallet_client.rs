@@ -1,5 +1,5 @@
 use std::{
-    path::PathBuf,
+    path::Path,
     process::{Command, Stdio},
 };
 
@@ -12,12 +12,12 @@ pub trait WalletClient {
         view_key: &str,
         spend_key: &str,
         password: &str,
-        wallet_file: &PathBuf,
+        wallet_file: &Path,
     ) -> Result<(), anyhow::Error>;
 
     async fn scan(
         &self,
-        wallet_file: &PathBuf,
+        wallet_file: &Path,
         password: &str,
         remote_url: &str,
     ) -> Result<(), anyhow::Error>;
@@ -39,8 +39,8 @@ impl WalletClient for BinaryWalletClient {
         &self,
         view_key: &str,
         spend_key: &str,
-        password: &str,
-        wallet_file: &PathBuf,
+        _password: &str,
+        wallet_file: &Path,
     ) -> Result<(), anyhow::Error> {
         let import_status = Command::new(&self.executable_path)
             .arg("import-view-key")
@@ -79,7 +79,7 @@ impl WalletClient for BinaryWalletClient {
 
     async fn scan(
         &self,
-        wallet_file: &PathBuf,
+        wallet_file: &Path,
         password: &str,
         _remote_url: &str,
     ) -> Result<(), anyhow::Error> {
@@ -131,7 +131,7 @@ mod libminotari {
             view_key: &str,
             spend_key: &str,
             password: &str,
-            wallet_file: &PathBuf,
+            wallet_file: &Path,
         ) -> Result<(), anyhow::Error> {
             minotari::init_with_view_key(
                 view_key,
@@ -146,7 +146,7 @@ mod libminotari {
 
         async fn scan(
             &self,
-            wallet_file: &PathBuf,
+            wallet_file: &Path,
             password: &str,
             remote_url: &str,
         ) -> Result<(), anyhow::Error> {
