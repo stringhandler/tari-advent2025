@@ -23,8 +23,6 @@ hex = "0.4"
 tari_utilities = "0.8.0"
 tari_crypto = "0.22.1"
 qrcode = "0.14"
-rusqlite = { version = "0.32", features = [] }
-
-minotari = { path = "d:/projects/minotari" }
+rusqlite = { version = "0.32", features = ["bundled"] }
 async-trait = "0.1.89"
-tokio = "1.48.0"
+tokio = { version = "1", features = ["full"] }
