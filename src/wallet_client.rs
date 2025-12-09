@@ -88,6 +88,8 @@ impl WalletClient for BinaryWalletClient {
             .arg("scan")
             .arg("-d")
             .arg(&wallet_file)
+            .arg("-n")
+            .arg("10000")
             .arg("-p")
             .arg(password)
             .stdout(Stdio::null())

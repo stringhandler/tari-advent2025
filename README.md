@@ -1,5 +1,184 @@
-# Tari Advent
+# Tari Advent Calendar
+
+A command-line advent calendar application for the Tari cryptocurrency network. Unlock daily encrypted wallet keys using passwords and discover messages sent to your wallets.
+
+Note this repo implements the [Tari Hidden Address Protocol](https://github.com/tari-project/tips/blob/main/tips/TIP-0003.md)
+
+## Features
+
+- 24 daily encrypted wallet view keys(one for each day of advent)
+- Password-protected encryption using XChaCha20Poly1305
+- Automatic readonly wallet import and blockchain scanning
+- QR code generation for easy wallet sharing
+- Progress tracking of unlocked days
+- Visual calendar interface
+
+
+
+
+
+## Installation
+
+### Prerequisites
+
+- Rust 2024 edition or later
+- [Minotari](https://github.com/tari-project/tari) executable (wallet client)
+- Windows, macOS, or Linux
+
+### Building from Source
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd tari-advent
+```
+
+2. Set the SQLX offline mode environment variable:
+```powershell
+# PowerShell (Windows)
+$env:SQLX_OFFLINE="true"
+
+# Bash (Linux/macOS)
+export SQLX_OFFLINE="true"
+```
+
+3. Build the project:
+```bash
+cargo build --release
+```
+
+The compiled binary will be available at `target/release/tari-advent` (or `tari-advent.exe` on Windows).
+
+## Usage
+
+### List All Days
+
+View all 24 days and their unlock status in a grid format:
+
+```bash
+tari-advent list
+```
+
+For detailed view with encrypted data:
+
+```bash
+tari-advent list --long
+```
+
+### Open a Door
+
+Unlock a specific day with a password:
+
+```bash
+tari-advent open <day> <password>
+```
+
+Interactive mode (prompts for day and password):
+
+```bash
+tari-advent open
+```
+
+With custom minotari executable path:
+
+```bash
+tari-advent open --executable /path/to/minotari
+```
+
+### Show Wallet Information
+
+Display wallet details and messages for an already-unlocked day:
+
+```bash
+tari-advent show <day>
+```
+
+Interactive mode:
+
+```bash
+tari-advent show
+```
+
+### Generate Addresses (Admin)
+
+Generate 24 encrypted wallet addresses from a CSV of passwords:
+
+```bash
+tari-advent generate passwords.csv output/ --executable /path/to/minotari
+```
+
+Options:
+- `--column <N>`: Specify which CSV column contains passwords (default: 0)
+
+This command will:
+1. Generate 24 wallet addresses using the minotari executable
+2. Encrypt each with its corresponding password
+3. Output individual JSON files for each day
+4. Create `all.csv` with plaintext keys (for backup)
+5. Create `encrypted_days.csv` (embedded in the application)
+
+## How It Works
+
+1. **Encryption**: Each day's wallet keys (view key and spend key) are encrypted using XChaCha20Poly1305 with a password-derived key (SHA-256).
+
+2. **Unlocking**: When you provide the correct password, the application:
+   - Decrypts the wallet keys
+   - Imports the keys into a local SQLite wallet database
+   - Scans the Tari blockchain for transactions
+   - Displays the wallet address as a QR code
+   - Shows any messages sent to that wallet
+
+3. **Data Storage**:
+   - Unlocked days and passwords are saved to `%APPDATA%/tari-advent/unlocked.json` (Windows) or `~/.local/share/tari-advent/unlocked.json` (Linux/macOS)
+   - Wallet databases are stored in `%APPDATA%/tari-advent/wallets/` (Windows) or `~/.local/share/tari-advent/wallets/` (Linux/macOS)
+
+## Project Structure
+
+```
+tari-advent/
+├── src/
+│   ├── main.rs              # Main CLI logic and commands
+│   ├── wallet_client.rs     # Wallet client interface
+│   └── encrypted_days.csv   # Encrypted wallet data
+├── Cargo.toml               # Project dependencies
+└── README.md                # This file
+```
+
+## Dependencies
+
+Key dependencies include:
+- `clap` - Command-line argument parsing
+- `chacha20poly1305` - Encryption
+- `tari_common_types` - Tari address types
+- `rusqlite` - Wallet database access
+- `qrcode` - QR code generation
+- `tokio` - Async runtime
+
+## Security Notes
+
+- Passwords are used to derive encryption keys via SHA-256
+- Encrypted data uses XChaCha20Poly1305 authenticated encryption
+- Wallet databases are created with the password "password1" (hardcoded for simplicity)
+- The `all.csv` file generated during address creation contains plaintext keys and should be stored securely
 
 ## Compilation Note
 
-You must set `$env:SQLX_OFFLINE="true"` when compiling.
+You must set `SQLX_OFFLINE="true"` when compiling:
+
+```powershell
+# PowerShell
+$env:SQLX_OFFLINE="true"
+cargo build --release
+
+# Bash
+export SQLX_OFFLINE="true"
+cargo build --release
+```
+
+## License
+
+See repository for license information.
+
+## Contributing
+
+Contributions are welcome! Please open an issue or pull request.
