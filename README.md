@@ -21,11 +21,25 @@ Note this repo implements the [Tari Hidden Address Protocol](https://github.com/
 
 ### Prerequisites
 
-- Rust 2024 edition or later
 - [Minotari](https://github.com/tari-project/tari) executable (wallet client)
 - Windows, macOS, or Linux
 
+### Download Pre-built Binaries
+
+Download the latest release for your platform from the [Releases](https://github.com/YOUR_USERNAME/tari-advent/releases) page:
+
+- **Windows**: `tari-advent-windows-x86_64.zip`
+- **Linux (glibc)**: `tari-advent-linux-x86_64.tar.gz`
+- **Linux (musl)**: `tari-advent-linux-x86_64-musl.tar.gz`
+- **macOS (Intel)**: `tari-advent-macos-x86_64.tar.gz`
+- **macOS (Apple Silicon)**: `tari-advent-macos-aarch64.tar.gz`
+
+Extract the archive and run the executable.
+
 ### Building from Source
+
+Requirements:
+- Rust 2024 edition or later
 
 1. Clone the repository:
 ```bash
@@ -194,3 +208,19 @@ See repository for license information.
 ## Contributing
 
 Contributions are welcome! Please open an issue or pull request.
+
+## Creating a Release
+
+To create a new release:
+
+1. Update the version in [Cargo.toml](Cargo.toml)
+2. Commit the changes
+3. Create and push a tag:
+   ```bash
+   git tag v0.1.0
+   git push origin v0.1.0
+   ```
+4. GitHub Actions will automatically:
+   - Build binaries for Windows, Linux (glibc and musl), and macOS (Intel and Apple Silicon)
+   - Create a GitHub release
+   - Upload all binaries to the release
