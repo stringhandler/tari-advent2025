@@ -9,8 +9,8 @@ use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
-use std::{any, fs};
+use std::process::Command;
+use std::fs;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
 use tari_common_types::types::{CompressedPublicKey, PrivateKey};
@@ -304,7 +304,7 @@ async fn open_door<T: WalletClient>(
         }
     };
 
-    if day < 1 || day > 24 {
+    if !(1..=24).contains(&day) {
         eprintln!("Error: Day must be between 1 and 24");
         return Err(anyhow!("Day must be between 1 and 24"));
     }
@@ -495,7 +495,7 @@ async fn show_day<T: WalletClient>(day: Option<u8>, client: T, no_scan: bool) ->
         }
     };
 
-    if day < 1 || day > 24 {
+    if !(1..=24).contains(&day) {
         eprintln!("Error: Day must be between 1 and 24");
         return Err(anyhow!("Day must be between 1 and 24"));
     }

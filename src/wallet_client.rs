@@ -4,7 +4,6 @@ use std::{
 };
 
 use anyhow::anyhow;
-use tokio::task;
 
 #[async_trait::async_trait]
 pub trait WalletClient {
@@ -46,15 +45,15 @@ impl WalletClient for BinaryWalletClient {
         let import_status = Command::new(&self.executable_path)
             .arg("import-view-key")
             .arg("-v")
-            .arg(&view_key)
+            .arg(view_key)
             .arg("-s")
-            .arg(&spend_key)
+            .arg(spend_key)
             .arg("-p")
             .arg("password1")
             .arg("-b")
             .arg("1435")
             .arg("-d")
-            .arg(&wallet_file)
+            .arg(wallet_file)
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .status();
@@ -87,7 +86,7 @@ impl WalletClient for BinaryWalletClient {
         let scan_status = Command::new(&self.executable_path)
             .arg("scan")
             .arg("-d")
-            .arg(&wallet_file)
+            .arg(wallet_file)
             .arg("-n")
             .arg("10000")
             .arg("-p")
